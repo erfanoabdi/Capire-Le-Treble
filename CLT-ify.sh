@@ -70,7 +70,7 @@ else
 fi
 
 # Create Image
-sudo $make_ext4fs -T 0 $fcontexts -l $syssize -a system "$output" "$systemdir/"
+sudo $make_ext4fs -T 0 $fcontexts -l $syssize -L system -a system "$output" "$systemdir/"
 
 # remove tempdir
 sudo rm -rf "$tempdir"
