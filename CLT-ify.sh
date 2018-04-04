@@ -41,10 +41,19 @@ do
     then
         line=`echo "$line" | cut -c2-`
     fi
+    if [[ $line = '?'* ]]
+    then
+        line=`echo "$line" | cut -c2-`
+        file=`echo "$line" | cut -d ":" -f 2 | cut -d "|" -f 1`
+        filedir=`echo $file | rev | cut -d "/" -f 2- | rev`
+        sudo mkdir -p "$systemdir/$filedir"
+        sudo cp -npr "$lineage/$file" "$systemdir/$filedir/"
+        continue
+    fi
     file=`echo "$line" | cut -d ":" -f 2 | cut -d "|" -f 1`
     filedir=`echo $file | rev | cut -d "/" -f 2- | rev`
     sudo mkdir -p "$systemdir/$filedir"
-    sudo cp -npr "$lineage/$file" "$systemdir/$filedir/"
+    sudo cp -fpr "$lineage/$file" "$systemdir/$filedir/"
 done < "$proptxt"
 
 # Prepare File Contexts
