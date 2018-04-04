@@ -1,62 +1,76 @@
 #/bin/bash
 
 # Project Capire le treble (CLT) by Erfan Abdi <erfangplus@gmail.com>
-# mount treblized lineage system image and set mount point to $lineage
-# mount GSI and set mount point to $gsi
-# set your proprietary-files.txt in $proptxt
-# set your System Image size to $syssize
 
-lineage="/media/erfanabdi/system"
-gsi="/media/erfanabdi/system1"
-proptxt="/home/erfanabdi/Desktop/CLT/proprietary-files.txt"
-syssize="5704253440"
-output="system.img"
+usage()
+{
+    echo "Usage: $0 <Path to Orginal system> <Path to GSI system> <System Partition Size> <Output File> [proprietary-files.txt]"
+    echo -e "\tPath to Orginal system : Mount treblized lineage system image and set mount point"
+    echo -e "\tPath to GSI system : Mount GSI and set mount point"
+    echo -e "\tSystem Partition Size : set system Partition Size"
+    echo -e "\tOutput File : set Output file path (system.img)"
+    echo -e "\tproprietary-files.txt : enter proprietary-files.txt if you want to copy any file from orginal system to target"
+}
+
+if [ "$4" == "" ]; then
+    echo "ERROR: Enter all needed parameters"
+    usage
+    exit 1
+fi
+
+lineage=$1
+gsi=$2
+syssize=$3
+output=$4
 
 LOCALDIR=`pwd`
 tempdirname="tmp"
 tempdir="$LOCALDIR/$tempdirname"
 systemdir="$tempdir/system"
 
-# Create temp dirs
+echo "Create Temp dir"
 mkdir -p "$systemdir"
 
-# Copy GSI Rom files
+echo "Copy GSI Rom Files"
 ( cd "$gsi" ; sudo tar cf - . ) | ( cd "$systemdir" ; sudo tar xf - )
 cd "$LOCALDIR"
 
-# Remove vendor symlink
+echo "Remove Vendor Symlink"
 sudo rm -rf "$systemdir/vendor"
 
-# Copy Vendor Dir to Temp
+echo "Copy Vendor Dir to Temp"
 ( cd "$lineage" ; sudo tar cf - "vendor" ) | ( cd "$systemdir" ; sudo tar xf - )
 cd "$LOCALDIR"
 
-# Copy System Prop Files
-while read -r line
-do
-    line=`echo "$line" | grep -v vendor/`
-    [[ $line = \#* ]] && continue
-    [ -z "$line" ] && continue
-    if [[ $line = '-'* ]]
-    then
-        line=`echo "$line" | cut -c2-`
-    fi
-    if [[ $line = '?'* ]]
-    then
-        line=`echo "$line" | cut -c2-`
+if [ "$5" != "" ]; then
+    echo "Copy System Prop Files"
+    proptxt=$5
+    while read -r line
+    do
+        line=`echo "$line" | grep -v vendor/`
+        [[ $line = \#* ]] && continue
+        [ -z "$line" ] && continue
+        if [[ $line = '-'* ]]
+        then
+            line=`echo "$line" | cut -c2-`
+        fi
+        if [[ $line = '?'* ]]
+        then
+            line=`echo "$line" | cut -c2-`
+            file=`echo "$line" | cut -d ":" -f 2 | cut -d "|" -f 1`
+            filedir=`echo $file | rev | cut -d "/" -f 2- | rev`
+            sudo mkdir -p "$systemdir/$filedir"
+            sudo cp -npr "$lineage/$file" "$systemdir/$filedir/"
+            continue
+        fi
         file=`echo "$line" | cut -d ":" -f 2 | cut -d "|" -f 1`
         filedir=`echo $file | rev | cut -d "/" -f 2- | rev`
         sudo mkdir -p "$systemdir/$filedir"
-        sudo cp -npr "$lineage/$file" "$systemdir/$filedir/"
-        continue
-    fi
-    file=`echo "$line" | cut -d ":" -f 2 | cut -d "|" -f 1`
-    filedir=`echo $file | rev | cut -d "/" -f 2- | rev`
-    sudo mkdir -p "$systemdir/$filedir"
-    sudo cp -fpr "$lineage/$file" "$systemdir/$filedir/"
-done < "$proptxt"
+        sudo cp -fpr "$lineage/$file" "$systemdir/$filedir/"
+    done < "$proptxt"
+fi
 
-# Prepare File Contexts
+echo "Prepare File Contexts"
 p="/plat_file_contexts"
 n="/nonplat_file_contexts"
 for f in "$systemdir/etc/selinux" "$systemdir/vendor/etc/selinux"; do
@@ -78,8 +92,8 @@ else
     make_ext4fs="$LOCALDIR/make_ext4fs_32"
 fi
 
-# Create Image
+echo "Create Image"
 sudo $make_ext4fs -T 0 $fcontexts -l $syssize -L system -a system -s "$output" "$systemdir/"
 
-# remove tempdir
+echo "Remove Temp dir"
 sudo rm -rf "$tempdir"
