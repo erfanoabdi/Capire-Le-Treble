@@ -27,6 +27,7 @@ LOCALDIR=`pwd`
 tempdirname="tmp"
 tempdir="$LOCALDIR/$tempdirname"
 systemdir="$tempdir/system"
+toolsdir="$LOCALDIR/tools"
 
 echo "Create Temp dir"
 mkdir -p "$systemdir"
@@ -86,10 +87,19 @@ if [[ -f "$tempdir/file_contexts" ]]; then
     fcontexts="-S $tempdir/file_contexts"
 fi
 
-if [[ $(getconf LONG_BIT) = "64" ]]; then
-    make_ext4fs="$LOCALDIR/make_ext4fs_64"
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    if [[ $(getconf LONG_BIT) = "64" ]]; then
+        make_ext4fs="$toolsdir/linux/bin/make_ext4fs_64"
+    else
+        make_ext4fs="$toolsdir/linux/bin/make_ext4fs_32"
+    fi
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    make_ext4fs="$toolsdir/mac/bin/make_ext4fs"
 else
-    make_ext4fs="$LOCALDIR/make_ext4fs_32"
+    echo "Not Supported OS for make_ext4fs"
+    echo "Removing Temp dir"
+    sudo rm -rf "$tempdir"
+    exit 1
 fi
 
 echo "Create Image"
