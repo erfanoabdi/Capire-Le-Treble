@@ -33,20 +33,19 @@ toolsdir="$LOCALDIR/tools"
 echo "Create Temp dir"
 mkdir -p "$systemdir"
 
-echo "Copy GSI Rom Files"
-( cd "$gsi" ; sudo tar cf - . ) | ( cd "$systemdir" ; sudo tar xf - )
+echo "Copy Lineage RootDir Files to Temp"
+( cd "$lineage" ; sudo tar cf - --exclude="./system" . ) | ( cd "$systemdir" ; sudo tar xf - )
+cd "$LOCALDIR"
+
+echo "Copy GSI System to Temp"
+( cd "$gsi" ; sudo tar cf - "system" ) | ( cd "$systemdir" ; sudo tar xf - )
 cd "$LOCALDIR"
 
 echo "Remove Vendor Symlink"
 sudo rm -rf "$systemdir/system/vendor"
-sudo rm -rf "$systemdir/vendor"
 
 echo "Copy Vendor Dir to Temp"
 ( cd "$lineage/system" ; sudo tar cf - "vendor" ) | ( cd "$systemdir/system" ; sudo tar xf - )
-cd "$LOCALDIR"
-
-echo "Create Vendor Symlink"
-( cd "$lineage" ; sudo tar cf - "vendor" ) | ( cd "$systemdir" ; sudo tar xf - )
 cd "$LOCALDIR"
 
 if [ "$5" != "" ]; then
@@ -82,12 +81,14 @@ p="/plat_file_contexts"
 n="/nonplat_file_contexts"
 for f in "$systemdir/system/etc/selinux" "$systemdir/system/vendor/etc/selinux" "$systemdir"; do
     if [[ -f "$f$p" ]]; then
-        sudo cat "$f$p" >> "$tempdir/file_contexts"
+        sudo cat "$f$p" >> "$tempdir/file_contexts_tmp"
     fi
     if [[ -f "$f$n" ]]; then
-        sudo cat "$f$n" >> "$tempdir/file_contexts"
+        sudo cat "$f$n" >> "$tempdir/file_contexts_tmp"
     fi
 done
+
+sudo sort "$tempdir/file_contexts_tmp" | uniq >> "$tempdir/file_contexts"
 
 if [[ -f "$tempdir/file_contexts" ]]; then
     fcontexts="-S $tempdir/file_contexts"
