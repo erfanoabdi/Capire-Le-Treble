@@ -45,6 +45,10 @@ echo "Copy Vendor Dir to Temp"
 ( cd "$lineage/system" ; sudo tar cf - "vendor" ) | ( cd "$systemdir/system" ; sudo tar xf - )
 cd "$LOCALDIR"
 
+echo "Create Vendor Symlink"
+( cd "$lineage" ; sudo tar cf - "vendor" ) | ( cd "$systemdir" ; sudo tar xf - )
+cd "$LOCALDIR"
+
 if [ "$5" != "" ]; then
     echo "Copy System Prop Files"
     proptxt=$5
@@ -76,7 +80,7 @@ fi
 echo "Prepare File Contexts"
 p="/plat_file_contexts"
 n="/nonplat_file_contexts"
-for f in "$systemdir/system/etc/selinux" "$systemdir/system/vendor/etc/selinux"; do
+for f in "$systemdir/system/etc/selinux" "$systemdir/system/vendor/etc/selinux" "$systemdir"; do
     if [[ -f "$f$p" ]]; then
         sudo cat "$f$p" >> "$tempdir/file_contexts"
     fi
@@ -103,11 +107,6 @@ else
     sudo rm -rf "$tempdir"
     exit 1
 fi
-
-echo "Create Vendor Symlink"
-cd "$systemdir/system"
-ln -s "/vendor" "$systemdir"
-cd "$LOCALDIR"
 
 echo "Create Image"
 sudo $make_ext4fs -T 0 $fcontexts -l $syssize -L system -a system -s "$output" "$systemdir/"
