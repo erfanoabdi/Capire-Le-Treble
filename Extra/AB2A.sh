@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 # Convert AB to A-only by Erfan Abdi <erfangplus@gmail.com>
 
@@ -12,7 +12,6 @@ etc/init/recovery-refresh.rc
 etc/init/update_engine.rc
 etc/init/update_verifier.rc
 etc/init/virtual_touchpad.rc
-etc/init/vr_hwc.rc
 bin/update_engine
 bin/update_verifier
 )

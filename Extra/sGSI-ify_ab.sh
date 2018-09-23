@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 # Project Capire le treble (CLT) by Erfan Abdi <erfangplus@gmail.com>
 
